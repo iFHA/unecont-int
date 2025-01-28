@@ -61,9 +61,9 @@ public static class EndpointsDocumentos
             });
             await dalDocumento.AddRangeAsync(models.ToList());
         });
-        app.MapDelete("Documentos", (DAL<Documento> dalDocumento) =>
+        app.MapDelete("Documentos", async (DAL<Documento> dalDocumento) =>
         {
-            dalDocumento.DeleteAll();
+            await dalDocumento.DeleteAll();
         });
     }
 }
