@@ -1,59 +1,38 @@
 @page "/Documentos"
 @inject DocumentoAPI api
 
-<MudTable ServerData="ServerReload" Dense="true" Hover="true" @ref="table">
+<MudDataGrid @ref="dataGrid" T="DocumentoResponse" ServerData="ServerReload" Filterable="false">
     <ToolBarContent>
         <MudText Typo="Typo.h6">Documentos</MudText>
         <MudSpacer />
         <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
             AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
     </ToolBarContent>
-    <HeaderContent>
-        <MudTh>
-            <MudTableSortLabel SortLabel="nr_field" T="DocumentoResponse">Nº</MudTableSortLabel>
-        </MudTh>
-        <MudTh>
-            <MudTableSortLabel SortLabel="sign_field" T="DocumentoResponse">CPF/CNPJ Emitente</MudTableSortLabel>
-        </MudTh>
-        <MudTh>
-            <MudTableSortLabel SortLabel="name_field" T="DocumentoResponse">CPF/CNPJ Destinatário</MudTableSortLabel>
-        </MudTh>
-        <MudTh>
-            <MudTableSortLabel SortLabel="position_field" T="DocumentoResponse">Código Verificador</MudTableSortLabel>
-        </MudTh>
-        <MudTh>
-            <MudTableSortLabel SortLabel="mass_field" T="DocumentoResponse">Emissão</MudTableSortLabel>
-        </MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd DataLabel="Nº">@context.NumeroDocumento</MudTd>
-        <MudTd DataLabel="CPF/CNPJ Emitente">@context.CnpjCpfEmitente</MudTd>
-        <MudTd DataLabel="CPF/CNPJ Destinatário">@context.CnpjCpfDestinatario</MudTd>
-        <MudTd DataLabel="Código Verificador">@context.CodigoVerificador</MudTd>
-        <MudTd DataLabel="Emissão">@context.DataHoraEmissao</MudTd>
-    </RowTemplate>
-    <NoRecordsContent>
-        <MudText>No matching records found</MudText>
-    </NoRecordsContent>
-    <LoadingContent>
-        <MudText>Loading...</MudText>
-    </LoadingContent>
+    <Columns>
+        <PropertyColumn Property="x => x.NumeroDocumento" Title="Nº" />
+        <PropertyColumn Property="x => x.CnpjCpfEmitente" Title="CPF/CNPJ Emitente" />
+        <PropertyColumn Property="x => x.CnpjCpfDestinatario" Title="CPF/CNPJ Destinatário" />
+        <PropertyColumn Property="x => x.CodigoVerificador" Title="Código Verificador" />
+        <PropertyColumn Property="x => x.DataHoraEmissao" Title="Emissão" />
+    </Columns>
     <PagerContent>
-        <MudTablePager />
+        <MudDataGridPager T="DocumentoResponse" />
     </PagerContent>
-</MudTable>
+</MudDataGrid>
 
 @code {
+    MudDataGrid<DocumentoResponse> dataGrid;
     private IEnumerable<DocumentoResponse> pagedData;
     private MudTable<DocumentoResponse> table;
 
     private int totalItems;
     private string searchString = null;
 
-    private async Task<TableData<DocumentoResponse>> ServerReload(TableState state, CancellationToken token)
+    private async Task<GridData<DocumentoResponse>> ServerReload(GridState<DocumentoResponse> state)
     {
         IEnumerable<DocumentoResponse> data = await api.GetDocumentosAsync();
-        await Task.Delay(300, token);
+        await Task.Delay(300);
+
         data = data.Where(doc =>
         {
             if (string.IsNullOrWhiteSpace(searchString))
@@ -67,32 +46,54 @@
             return false;
         }).ToArray();
         totalItems = data.Count();
-        switch (state.SortLabel)
+        var sortDefinition = state.SortDefinitions.FirstOrDefault();
+        if (sortDefinition != null)
         {
-            case "nr_field":
-                data = data.OrderByDirection(state.SortDirection, o => o.NumeroDocumento);
-                break;
-            case "sign_field":
-                data = data.OrderByDirection(state.SortDirection, o => o.CnpjCpfEmitente);
-                break;
-            case "name_field":
-                data = data.OrderByDirection(state.SortDirection, o => o.CnpjCpfDestinatario);
-                break;
-            case "position_field":
-                data = data.OrderByDirection(state.SortDirection, o => o.CodigoVerificador);
-                break;
-            case "mass_field":
-                data = data.OrderByDirection(state.SortDirection, o => o.DataHoraEmissao);
-                break;
+            switch (sortDefinition.SortBy)
+            {
+                case nameof(DocumentoResponse.NumeroDocumento):
+                    data = data.OrderByDirection(
+                    sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
+                    o => o.NumeroDocumento
+                    );
+                    break;
+                case nameof(DocumentoResponse.CnpjCpfEmitente):
+                    data = data.OrderByDirection(
+                    sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
+                    o => o.CnpjCpfEmitente
+                    );
+                    break;
+                case nameof(DocumentoResponse.CnpjCpfDestinatario):
+                    data = data.OrderByDirection(
+                    sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
+                    o => o.CnpjCpfDestinatario
+                    );
+                    break;
+                case nameof(DocumentoResponse.CodigoVerificador):
+                    data = data.OrderByDirection(
+                    sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
+                    o => o.CodigoVerificador
+                    );
+                    break;
+                case nameof(DocumentoResponse.DataHoraEmissao):
+                    data = data.OrderByDirection(
+                    sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
+                    o => o.DataHoraEmissao
+                    );
+                    break;
+            }
         }
-
-        pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
-        return new TableData<DocumentoResponse>() { TotalItems = totalItems, Items = pagedData };
+        var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new GridData<DocumentoResponse>
+            {
+                TotalItems = totalItems,
+                Items = pagedData
+            };
     }
 
-    private void OnSearch(string text)
+    private Task OnSearch(string text)
     {
         searchString = text;
-        table.ReloadServerData();
+        return dataGrid.ReloadServerData();
     }
 }
