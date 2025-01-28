@@ -1,32 +1,59 @@
 @page "/Documentos"
 @inject DocumentoAPI api
+@inject NavigationManager navigationManager
 
-<MudDataGrid @ref="dataGrid" T="DocumentoResponse" ServerData="ServerReload" Filterable="false">
-    <ToolBarContent>
-        <MudText Typo="Typo.h6">Documentos</MudText>
-        <MudSpacer />
-        <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
-            AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-    </ToolBarContent>
-    <Columns>
-        <PropertyColumn Property="x => x.NumeroDocumento" Title="Nº" />
-        <PropertyColumn Property="x => x.CnpjCpfEmitente" Title="CPF/CNPJ Emitente" />
-        <PropertyColumn Property="x => x.CnpjCpfDestinatario" Title="CPF/CNPJ Destinatário" />
-        <PropertyColumn Property="x => x.CodigoVerificador" Title="Código Verificador" />
-        <PropertyColumn Property="x => x.DataHoraEmissao" Title="Emissão" />
-    </Columns>
-    <PagerContent>
-        <MudDataGridPager T="DocumentoResponse" />
-    </PagerContent>
-</MudDataGrid>
+<MudButton Disabled="@_processingImport" OnClick="Importar" Variant="Variant.Filled" Color="Color.Primary">
+    @if (_processingImport)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+        <MudText Class="ms-2">Importando</MudText>
+    }
+    else
+    {
+        <MudText>Importar Documentos</MudText>
+    }
+    </MudButton>
+    <MudButton Disabled="@_processingDelete" OnClick="Remove" Variant="Variant.Filled"
+        StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error">
+        @if (_processingDelete)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+        <MudText Class="ms-2">Removendo</MudText>
+    }
+    else
+    {
+        <MudText>Remover Todos</MudText>
+    }
+    </MudButton>
+    <MudDataGrid @ref="dataGrid" T="DocumentoResponse" ServerData="ServerReload" Filterable="false">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Documentos</MudText>
+            <MudSpacer />
+            <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
+                AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.NumeroDocumento" Title="Nº" />
+            <PropertyColumn Property="x => x.CnpjCpfEmitente" Title="CPF/CNPJ Emitente" />
+            <PropertyColumn Property="x => x.CnpjCpfDestinatario" Title="CPF/CNPJ Destinatário" />
+            <PropertyColumn Property="x => x.CodigoVerificador" Title="Código Verificador" />
+            <PropertyColumn Property="x => x.DataHoraEmissao" Title="Emissão" />
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="DocumentoResponse" />
+        </PagerContent>
+    </MudDataGrid>
 
-@code {
+    @code {
     MudDataGrid<DocumentoResponse> dataGrid;
     private IEnumerable<DocumentoResponse> pagedData;
     private MudTable<DocumentoResponse> table;
+    private bool _processingImport = false;
+    private bool _processingDelete = false;
 
     private int totalItems;
     private string searchString = null;
+    [Inject] private IDialogService DialogService { get; set; }
 
     private async Task<GridData<DocumentoResponse>> ServerReload(GridState<DocumentoResponse> state)
     {
@@ -95,5 +122,30 @@
     {
         searchString = text;
         return dataGrid.ReloadServerData();
+    }
+
+    private async Task Importar()
+    {
+        _processingImport = true;
+        await api.ImportDocumentosAsync();
+        _processingImport = false;
+        navigationManager.Refresh(true);
+    }
+    private async Task Remove()
+    {
+        _processingDelete = true;
+        bool? result = await DialogService.ShowMessageBox(
+        "Atenção!",
+        "Tem certeza que deseja apagar tudo?",
+        yesText: "Deletar!", cancelText: "Cancelar");
+        bool cancelado = result == null;
+        if (cancelado)
+        {
+            _processingDelete = false;
+            return;
+        }
+        await api.DeleteDocumentoAsync();
+        _processingDelete = false;
+        navigationManager.Refresh(true);
     }
 }
