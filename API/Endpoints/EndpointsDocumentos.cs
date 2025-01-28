@@ -26,7 +26,7 @@ public static class EndpointsDocumentos
             ));
             return Results.Ok(response);
         });
-        app.MapPost("Documentos/Importar", async (DAL<Documento> dalDocumento, DocumentoService service) =>
+        app.MapPost("Documentos/Importacao", async (DAL<Documento> dalDocumento, DocumentoService service) =>
         {
             long ultimoEventoUsuarioId = 0;
             var docs = dalDocumento.List().OrderByDescending(doc => doc.UsuarioEventoId).Take(1);
@@ -61,7 +61,7 @@ public static class EndpointsDocumentos
             });
             await dalDocumento.AddRangeAsync(models.ToList());
         });
-        app.MapDelete("", (DAL<Documento> dalDocumento) =>
+        app.MapDelete("Documentos", (DAL<Documento> dalDocumento) =>
         {
             dalDocumento.DeleteAll();
         });
