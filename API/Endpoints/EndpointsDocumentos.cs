@@ -14,26 +14,33 @@ public static class EndpointsDocumentos
     {
         app.MapGet("Documentos", (DAL<Documento> dalDocumento, XmlProcessor<CompNFe> XmlProcessor) =>
         {
-            var response = dalDocumento.List().Select(doc =>
+            try
             {
-                List<NFe> nfes = XmlProcessor.GetObjectFromBase64EncodedString(doc.Xml).NotasFiscais;
-                return new DocumentoApiResponse(
-                    doc.UsuarioEventoId,
-                    doc.EventoId,
-                    doc.DataHoraEvento,
-                    doc.TipoEventoId,
-                    doc.DocumentoId,
-                    doc.TipoDocumento,
-                    doc.NumeroDocumento,
-                    doc.CnpjCpfEmitente,
-                    doc.CnpjCpfDestinatario,
-                    doc.CodigoVerificador,
-                    doc.DataHoraEmissao,
-                    nfes
-                );
+                var response = dalDocumento.List().Select(doc =>
+                    {
+                        List<NFe> nfes = XmlProcessor.GetObjectFromBase64EncodedString(doc.Xml).NotasFiscais;
+                        return new DocumentoApiResponse(
+                            doc.UsuarioEventoId,
+                            doc.EventoId,
+                            doc.DataHoraEvento,
+                            doc.TipoEventoId,
+                            doc.DocumentoId,
+                            doc.TipoDocumento,
+                            doc.NumeroDocumento,
+                            doc.CnpjCpfEmitente,
+                            doc.CnpjCpfDestinatario,
+                            doc.CodigoVerificador,
+                            doc.DataHoraEmissao,
+                            nfes
+                        );
+                    }
+                ).OrderBy(doc => doc.UsuarioEventoId);
+                return Results.Ok(response);
             }
-        ).OrderBy(doc => doc.UsuarioEventoId);
-            return Results.Ok(response);
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
         });
         app.MapPost("Documentos/Importacao", async (DAL<Documento> dalDocumento, DocumentoService service) =>
         {
