@@ -1,4 +1,4 @@
-namespace API.Response;
+namespace API.UneCont.Response;
 
 public record DocumentoResponse(
     long UsuarioEventoId,
@@ -11,5 +11,6 @@ public record DocumentoResponse(
     string CnpjCpfEmitente,
     string CnpjCpfDestinatario,
     string CodigoVerificador,
-    string? DataHoraEmissao
+    string? DataHoraEmissao,
+    DocumentoArquivoResponse Documentos
 );

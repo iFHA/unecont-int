@@ -1,8 +1,8 @@
-using System;
+using API.XmlModels;
 
-namespace Web.Response;
+namespace API.Response;
 
-public record DocumentoResponse(
+public record DocumentoApiResponse(
     long UsuarioEventoId,
     int EventoId,
     DateTime DataHoraEvento,
@@ -14,7 +14,5 @@ public record DocumentoResponse(
     string CnpjCpfDestinatario,
     string CodigoVerificador,
     string? DataHoraEmissao,
-    ICollection<NFe> NFes)
-{
-    public int GetQtdNFe() => NFes.Count;
-}
+    ICollection<NFe> NFes
+);

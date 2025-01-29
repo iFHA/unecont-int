@@ -2,6 +2,7 @@ using API.Database;
 using API.Endpoints;
 using API.Models;
 using API.Services;
+using API.XmlModels;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,7 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddTransient<DAL<Documento>>();
 builder.Services.AddTransient<DocumentoService>();
+builder.Services.AddTransient<XmlProcessor<CompNFe>>();
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://api.hom.une.digital/v2/UneCont") });
 

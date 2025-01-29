@@ -38,6 +38,7 @@
             <PropertyColumn Property="x => x.CnpjCpfDestinatario" Title="CPF/CNPJ Destinatário" />
             <PropertyColumn Property="x => x.CodigoVerificador" Title="Código Verificador" />
             <PropertyColumn Property="x => x.DataHoraEmissao" Title="Emissão" />
+            <PropertyColumn Property="x => x.GetQtdNFe()" Title="QTD NFes" />
         </Columns>
         <PagerContent>
             <MudDataGridPager T="DocumentoResponse" />
@@ -106,6 +107,12 @@
                     data = data.OrderByDirection(
                     sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
                     o => o.DataHoraEmissao
+                    );
+                    break;
+                case nameof(DocumentoResponse.GetQtdNFe):
+                    data = data.OrderByDirection(
+                    sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
+                    o => o.GetQtdNFe()
                     );
                     break;
             }

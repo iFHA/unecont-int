@@ -12,4 +12,5 @@ public class Documento
     public string CnpjCpfDestinatario { get; set; } = string.Empty;
     public string? CodigoVerificador { get; set; } = string.Empty;
     public string? DataHoraEmissao { get; set; }
+    public string Xml { get; set; }
 }

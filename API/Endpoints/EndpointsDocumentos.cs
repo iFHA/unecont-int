@@ -3,27 +3,36 @@ using API.Database;
 using API.Models;
 using API.Response;
 using API.Services;
+using API.UneCont.Response;
+using API.XmlModels;
+using Castle.Components.DictionaryAdapter.Xml;
 
 namespace API.Endpoints;
 public static class EndpointsDocumentos
 {
     public static void AddEndpointsDocumentos(this WebApplication app)
     {
-        app.MapGet("Documentos", (DAL<Documento> dalDocumento) =>
+        app.MapGet("Documentos", (DAL<Documento> dalDocumento, XmlProcessor<CompNFe> XmlProcessor) =>
         {
-            var response = dalDocumento.List().Select(doc => new DocumentoResponse(
-                doc.UsuarioEventoId,
-                doc.EventoId,
-                doc.DataHoraEvento,
-                doc.TipoEventoId,
-                doc.DocumentoId,
-                doc.TipoDocumento,
-                doc.NumeroDocumento,
-                doc.CnpjCpfEmitente,
-                doc.CnpjCpfDestinatario,
-                doc.CodigoVerificador,
-                doc.DataHoraEmissao
-            ));
+            var response = dalDocumento.List().Select(doc =>
+            {
+                List<NFe> nfes = XmlProcessor.GetObjectFromBase64EncodedString(doc.Xml).NotasFiscais;
+                return new DocumentoApiResponse(
+                    doc.UsuarioEventoId,
+                    doc.EventoId,
+                    doc.DataHoraEvento,
+                    doc.TipoEventoId,
+                    doc.DocumentoId,
+                    doc.TipoDocumento,
+                    doc.NumeroDocumento,
+                    doc.CnpjCpfEmitente,
+                    doc.CnpjCpfDestinatario,
+                    doc.CodigoVerificador,
+                    doc.DataHoraEmissao,
+                    nfes
+                );
+            }
+        ).OrderBy(doc => doc.UsuarioEventoId);
             return Results.Ok(response);
         });
         app.MapPost("Documentos/Importacao", async (DAL<Documento> dalDocumento, DocumentoService service) =>
@@ -38,12 +47,18 @@ public static class EndpointsDocumentos
 
             ICollection<DocumentoResponse> collection = new Collection<DocumentoResponse>();
             var response = await service.GetDocumentosAsyncByUltimoEventoUsuarioId(ultimoEventoUsuarioId);
-            while (!ultimoEventoUsuarioId.Equals(response.MaximoEventoUsuarioId))
+            if (response is not null)
             {
-                collection = collection.Concat(response.ListaEventosDocumentos).ToList();
-                ultimoEventoUsuarioId = response.UltimoEventoUsuarioId;
-                response = await service.GetDocumentosAsyncByUltimoEventoUsuarioId(ultimoEventoUsuarioId);
-
+                while (!ultimoEventoUsuarioId.Equals(response.MaximoEventoUsuarioId))
+                {
+                    collection = collection.Concat(response.ListaEventosDocumentos).ToList();
+                    ultimoEventoUsuarioId = response.UltimoEventoUsuarioId;
+                    response = await service.GetDocumentosAsyncByUltimoEventoUsuarioId(ultimoEventoUsuarioId);
+                    if (response is null)
+                    {
+                        break;
+                    }
+                }
             }
             var models = collection.Select(c => new Documento()
             {
@@ -57,7 +72,8 @@ public static class EndpointsDocumentos
                 CnpjCpfEmitente = c.CnpjCpfEmitente,
                 CnpjCpfDestinatario = c.CnpjCpfDestinatario,
                 CodigoVerificador = c.CodigoVerificador,
-                DataHoraEmissao = c.DataHoraEmissao
+                DataHoraEmissao = c.DataHoraEmissao,
+                Xml = c.Documentos.Xml
             });
             await dalDocumento.AddRangeAsync(models.ToList());
         });
