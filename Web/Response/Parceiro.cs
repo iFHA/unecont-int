@@ -1,3 +1,5 @@
+using Web.Utils;
+
 namespace Web.Response;
 
 public class Parceiro
@@ -19,4 +21,8 @@ public class Parceiro
     public int UfId { get; set; }
     public string Cep { get; set; }
     public int CodigoCnaePrincipal { get; set; }
+    public override string ToString()
+    {
+        return $"{FormatCnpjCpf.Format(CnpjCpf)} {RazaoSocialNome}";
+    }
 }

@@ -48,4 +48,9 @@ public class NFe
     
     [XmlElement("Tomador")]
     public Parceiro Tomador { get; set; }
+
+    public decimal TotalRetido()
+    {
+        return Math.Round(ValorINSS + ValorISS + ValorIRRF + ValorPIS + ValorCOFINS + ValorCSLL, 2);
+    }
 }

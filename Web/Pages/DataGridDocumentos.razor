@@ -25,7 +25,7 @@
         <MudText>Remover Todos</MudText>
     }
     </MudButton>
-    <MudDataGrid @ref="dataGrid" T="DocumentoResponse" ServerData="ServerReload" Filterable="false">
+    <MudDataGrid Dense="true" @ref="dataGrid" T="DocumentoResponse" ServerData="ServerReload" Filterable="false">
         <ToolBarContent>
             <MudText Typo="Typo.h6">Documentos</MudText>
             <MudSpacer />
@@ -33,13 +33,38 @@
                 AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
         </ToolBarContent>
         <Columns>
-            <PropertyColumn Property="x => x.NumeroDocumento" Title="Nº" />
-            <PropertyColumn Property="x => x.CnpjCpfEmitente" Title="CPF/CNPJ Emitente" />
-            <PropertyColumn Property="x => x.CnpjCpfDestinatario" Title="CPF/CNPJ Destinatário" />
-            <PropertyColumn Property="x => x.CodigoVerificador" Title="Código Verificador" />
-            <PropertyColumn Property="x => x.DataHoraEmissao" Title="Emissão" />
-            <PropertyColumn Property="x => x.GetQtdNFe()" Title="QTD NFes" />
+            <HierarchyColumn T="DocumentoResponse" InitiallyExpandedFunc="@((x) => false)" />
+            <PropertyColumn Property="x => x.GetNFe().Prestador " Title="Prestador"/>
+            <PropertyColumn Property="x => x.GetNFe().Tomador" Title="Tomador"/>
+            <PropertyColumn Property="x => x.NumeroDocumento" Title="Nº NF"/>
+            <PropertyColumn Sortable="false" CellStyle="text-align: center" Property="x => x.GetDataEmissaoFormatada()" Title="Emissão"/>
+            <PropertyColumn Sortable="false" CellStyle="text-align: right" Property="x => FormatCurrency.FormatToCurrencyString(x.GetNFe().ValorNFe, 2)" Title="VL.NFe"/>
+            @* <PropertyColumn CellStyle="text-align: right" Property="x => x.GetNFe().ValorINSS" Title="VL.INSS" /> *@
+            @* <PropertyColumn CellStyle="text-align: right" Property="x => x.GetNFe().ValorISS" Title="VL.ISS" /> *@
+            @* <PropertyColumn CellStyle="text-align: right" Property="x => x.GetNFe().ValorIRRF" Title="VL.IRRF" /> *@
+            @* <PropertyColumn CellStyle="text-align: right" Property="x => x.GetNFe().ValorPIS" Title="VL.PIS" /> *@
+            @* <PropertyColumn CellStyle="text-align: right" Property="x => x.GetNFe().ValorCOFINS" Title="VL.COFINS" /> *@
+            @* <PropertyColumn CellStyle="text-align: right" Property="x => x.GetNFe().ValorCSLL" Title="CSLL" /> *@
+            <PropertyColumn Sortable="false" CellStyle="text-align: right" Property="x => FormatCurrency.FormatToCurrencyString(x.GetNFe().TotalRetido(), 2)" Title="Tot.Ret."/>
         </Columns>
+        <ChildRowContent>
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Retenções</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText>INSS @FormatCurrency.FormatToCurrencyString(context.Item.GetNFe().ValorINSS)</MudText>
+                    <MudText>ISS @FormatCurrency.FormatToCurrencyString(context.Item.GetNFe().ValorISS)</MudText>
+                    <MudText>IRRF @FormatCurrency.FormatToCurrencyString(context.Item.GetNFe().ValorIRRF)</MudText>
+                    <MudText>PIS @FormatCurrency.FormatToCurrencyString(context.Item.GetNFe().ValorPIS)</MudText>
+                    <MudText>COFINS @FormatCurrency.FormatToCurrencyString(context.Item.GetNFe().ValorCOFINS)</MudText>
+                    <MudText>CSLL @FormatCurrency.FormatToCurrencyString(context.Item.GetNFe().ValorCSLL)</MudText>
+                    <MudText>TOTAL RETIDO @FormatCurrency.FormatToCurrencyString(context.Item.GetNFe().TotalRetido())</MudText>
+                </MudCardContent>
+            </MudCard>
+        </ChildRowContent>
         <PagerContent>
             <MudDataGridPager T="DocumentoResponse" />
         </PagerContent>
@@ -65,11 +90,15 @@
         {
             if (string.IsNullOrWhiteSpace(searchString))
                 return true;
-            if (doc.CnpjCpfDestinatario.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            if (FormatCnpjCpf.RemoveFormat(doc.CnpjCpfDestinatario).Contains(FormatCnpjCpf.RemoveFormat(searchString), StringComparison.OrdinalIgnoreCase))
                 return true;
-            if (doc.CnpjCpfEmitente.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            if (FormatCnpjCpf.RemoveFormat(doc.CnpjCpfDestinatario).Contains(FormatCnpjCpf.RemoveFormat(searchString), StringComparison.OrdinalIgnoreCase))
                 return true;
-            if ($"{doc.NumeroDocumento} {doc.CodigoVerificador} {doc.DataHoraEmissao}".Contains(searchString))
+            if (doc.GetNFe().Prestador.ToString().Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (doc.GetNFe().Tomador.ToString().Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if ($"{doc.NumeroDocumento} {doc.CodigoVerificador} {doc.GetDataEmissaoFormatada()}".Contains(searchString))
                 return true;
             return false;
         }).ToArray();
@@ -97,22 +126,10 @@
                     o => o.CnpjCpfDestinatario
                     );
                     break;
-                case nameof(DocumentoResponse.CodigoVerificador):
+                case nameof(DocumentoResponse.GetDataEmissaoFormatada):
                     data = data.OrderByDirection(
                     sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
-                    o => o.CodigoVerificador
-                    );
-                    break;
-                case nameof(DocumentoResponse.DataHoraEmissao):
-                    data = data.OrderByDirection(
-                    sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
-                    o => o.DataHoraEmissao
-                    );
-                    break;
-                case nameof(DocumentoResponse.GetQtdNFe):
-                    data = data.OrderByDirection(
-                    sortDefinition.Descending ? SortDirection.Descending : SortDirection.Ascending,
-                    o => o.GetQtdNFe()
+                    o => o.DataEmissaoToDateTime()
                     );
                     break;
             }
@@ -136,7 +153,7 @@
         _processingImport = true;
         await api.ImportDocumentosAsync();
         _processingImport = false;
-        navigationManager.Refresh(true);
+        await dataGrid.ReloadServerData();
     }
     private async Task Remove()
     {
@@ -153,6 +170,6 @@
         }
         await api.DeleteDocumentoAsync();
         _processingDelete = false;
-        navigationManager.Refresh(true);
+        await dataGrid.ReloadServerData();
     }
 }
